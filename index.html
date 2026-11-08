@@ -13,10 +13,18 @@ canvas{display:block}
 .box h3{margin:10px 0 6px;color:#9ec1ff}
 button{background:#33405a;color:#fff;border:0;border-radius:8px;padding:8px 12px;margin:3px;font-size:14px;cursor:pointer}
 button:hover{background:#4a5d86}
+#chat{position:fixed;left:10px;bottom:10px;width:min(440px,70vw);pointer-events:none;z-index:5}
+#clog{max-height:190px;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;opacity:0;transition:opacity .4s}
+#clog.on{opacity:1}
+#clog div{background:#000a;padding:3px 9px;margin-top:2px;border-radius:6px;font-size:14px;line-height:1.35;word-break:break-word;text-shadow:0 0 3px #000}
+#clog b{color:#9ec1ff}#clog .sys{color:#bbb;font-style:italic}
+#cin{display:none;width:100%;box-sizing:border-box;margin-top:5px;padding:8px 10px;font-size:15px;border:0;border-radius:8px;background:#1d2330;color:#fff;outline:2px solid #4a5d86;pointer-events:auto}
+#chat.open #cin{display:block}
 </style></head><body>
 <div id="cross"></div><div id="flash"></div>
-<div id="help"><b>WASD</b> yürü · <b>Shift</b> koş · <b>Space</b> zıpla · <b>B</b> eşya menüsü · <b>U</b> ışınlan<br><b>E</b> tut/bırak · <b>Sol tık</b> fırlat/it · <b>F</b> kullan/çalıştır · <b>G</b> ateşe ver · <b>T</b> kabı boşalt · <b>X</b> sil<br>Eşyayı düdüklü/blender/mikrodalganın üstünde bırakırsan içine girer, sonra F.</div>
+<div id="help"><b>WASD</b> yürü · <b>Shift</b> koş · <b>Space</b> zıpla · <b>B</b> eşya menüsü · <b>U</b> ışınlan<br><b>E</b> tut/bırak · <b>Sol tık</b> fırlat/it · <b>F</b> kullan/çalıştır · <b>G</b> ateşe ver · <b>R</b> kabı boşalt · <b>T</b> sohbet · <b>X</b> sil<br>Eşyayı düdüklü/blender/mikrodalganın üstünde bırakırsan içine girer, sonra F.</div>
 <div id="tip"></div><div id="msg"></div>
+<div id="chat"><div id="clog"></div><input id="cin" maxlength="120" placeholder="Mesaj yaz · Enter gönder · Esc kapat" autocomplete="off"></div>
 <div id="room" style="position:fixed;right:10px;top:10px;font-size:14px;background:#0009;padding:4px 10px;border-radius:8px;pointer-events:none"></div>
 <div id="start"><div id="scr" style="text-align:center;max-width:440px">
 <div style="font-size:34px;margin-bottom:16px">Serbest Sandbox</div>
@@ -137,10 +145,10 @@ function finish(b){const C=b.contents,k=b.d.box;b.proc=null;b.g.rotation.z=0;con
   if(any(c=>c.d.bat)){killIn(b);boomAt(b.p,4,16);ignite(b,5,1);toast('💥 Pil blenderde patladı!');return}
   const col=any(c=>c.d.animal)?0xaa2233:C[0].g.children[0].material.color.getHex(),el=any(c=>c.d.el);
   killIn(b);if(el)fx(b.p,'y',20,4,.5,.6,8);const q=spawn('puree',b.p.x,b.p.y,b.p.z);q.g.children[0].material.color.setHex(col);q.col=col;q.inside=b;b.contents.push(q);q.g.visible=false;
-  toast(el?'Elektronik parçalar öğütüldü, kıvılcım çıktı!':'Hepsi tek karışım oldu! (T ile boşalt)');return}
+  toast(el?'Elektronik parçalar öğütüldü, kıvılcım çıktı!':'Hepsi tek karışım oldu! (R ile boşalt)');return}
  if(k==='cooker'){
   if(any(c=>c.d.bat||c.d.el||c.d.can)){killIn(b);boomAt(b.p,7,28);toast('💥 DÜDÜKLÜ TENCERE PATLADI!');return}
-  const f=cook(C);toast(f?'Piştiiii! ('+f+' parça) — T ile boşalt':'Tencere ısındı, pişecek bir şey yok');return}
+  const f=cook(C);toast(f?'Piştiiii! ('+f+' parça) — R ile boşalt':'Tencere ısındı, pişecek bir şey yok');return}
  if(k==='micro'){
   if(any(c=>c.d.metal)){fx(b.p,'y',40,5,.6,.5,8);ignite(b,6,1);toast('⚡ Metal mikrodalgada kıvılcım çıkardı, yangın!');return}
   if(any(c=>c.d.el||c.d.bat)){killIn(b);boomAt(b.p,3,10);ignite(b,5,1);toast('Elektronik mikrodalgada patladı!');return}
@@ -205,7 +213,7 @@ function pick(){const o=cam.position;cam.getWorldDirection(dir);let best=null,bd
  for(const b of bodies){if(b.inside||b.dead||b.hb>=0)continue;const rr=Math.max(b.r,.14),tx=b.p.x-o.x,ty=b.p.y-o.y,tz=b.p.z-o.z,t=tx*dir.x+ty*dir.y+tz*dir.z;if(t<0||t>bd)continue;if(tx*tx+ty*ty+tz*tz-t*t<rr*rr){bd=t;best=b}}return best}
 
 /* ---------- girdiler ---------- */
-function menuOpen(){return!!document.querySelector('.menu.on')}
+function menuOpen(){return chatOn||!!document.querySelector('.menu.on')}
 function menu(id){const e=$(id),on=!e.classList.contains('on');['bm','um'].forEach(i=>$(i).classList.remove('on'));if(on){e.classList.add('on');document.exitPointerLock()}else ren.domElement.requestPointerLock()}
 document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===ren.domElement;if(locked)$('start').style.display='none';else if(inGame&&!menuOpen())showScr('pause')});
 addEventListener('mousemove',e=>{if(!locked)return;P.yaw-=e.movementX*.0022;P.pitch=clamp(P.pitch-e.movementY*.0022,-1.5,1.5)});
@@ -213,12 +221,25 @@ addEventListener('mousedown',e=>{if(!locked||e.button)return;cam.getWorldDirecti
 addEventListener('keyup',e=>K[e.code]=0);
 addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;K[e.code]=1;if(e.code==='Space')e.preventDefault();
  if(e.code==='KeyB')menu('bm');if(e.code==='KeyU')menu('um');if(!locked)return;
+ if(e.code==='KeyT'){e.preventDefault();openChat();return}
  if(e.code==='KeyE'){if(held)send({t:'drop',th:0});else{const t=pick();if(t)send({t:'grab',id:t.id})}return}
  const t=held||pick();if(!t)return;
  if(e.code==='KeyF')send({t:'use',id:t.id});
  if(e.code==='KeyG')send({t:'ign',id:t.id});
  if(e.code==='KeyX')send({t:'rm',id:t.id});
- if(e.code==='KeyT')send({t:'dump',id:t.id})});
+ if(e.code==='KeyR')send({t:'dump',id:t.id})});
+/* ---------- sohbet ---------- */
+let chatOn=false;
+function chatPing(){const l=$('clog');l.classList.add('on');clearTimeout(chatPing.h);if(!chatOn)chatPing.h=setTimeout(()=>l.classList.remove('on'),8000)}
+function chatAdd(id,txt,sys){const l=$('clog'),d=document.createElement('div');
+ if(sys){d.className='sys';d.textContent=txt}else{const b=document.createElement('b');b.textContent=(id===myId?'Sen':'Oyuncu '+id)+': ';d.appendChild(b);d.appendChild(document.createTextNode(String(txt).slice(0,120)))}
+ l.appendChild(d);while(l.children.length>40)l.removeChild(l.firstChild);chatPing()}
+function chatSend(txt){txt=txt.trim().slice(0,120);if(!txt)return;
+ if(online&&!auth){if(hostConn&&hostConn.open)hostConn.send({t:'chat',m:txt})}
+ else{if(online)bcast({t:'chat',id:myId,m:txt});chatAdd(myId,txt)}}
+function openChat(){if(chatOn)return;chatOn=true;for(const k in K)K[k]=0;$('chat').classList.add('open');chatPing();document.exitPointerLock();const i=$('cin');i.value='';i.focus()}
+function closeChat(){if(!chatOn)return;chatOn=false;$('chat').classList.remove('open');$('cin').blur();chatPing();ren.domElement.requestPointerLock()}
+$('cin').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){chatSend($('cin').value);closeChat()}else if(e.key==='Escape'){closeChat()}});
 function spawnMenu(k){const d=D[k];cam.getWorldDirection(dir);const x=cam.position.x+dir.x*2.2,z=cam.position.z+dir.z*2.2,y=d.animal?d.r:Math.max(d.r,cam.position.y+dir.y*2.2);send({t:'spawn',k,x,y,z})}
 (()=>{const cats=[...new Set(Object.values(D).map(d=>d.c).filter(c=>c!=='x'))];let h='';for(const c of cats){h+='<h3>'+c+'</h3>';for(const k in D)if(D[k].c===c)h+='<button onclick="spawnMenu(\''+k+'\')">'+D[k].n+'</button>'}$('bl').innerHTML=h})();
 
@@ -240,7 +261,7 @@ function clearBodies(){for(const b of bodies)scene.remove(b.g);bodies=[];byId.cl
 function rmAvatar(id){if(rp[id]){scene.remove(rp[id].g);delete rp[id]}}
 function errTxt(e){return e.type==='browser-incompatible'?'Bu sayfada/tarayıcıda çok oyunculu (WebRTC) çalışmıyor. Oyunu index.html veya .exe olarak bilgisayarında aç.':'Hata: '+e.type}
 function bcast(m,ex){for(const[id,c]of conns)if(id!==ex&&c.open)c.send(m)}
-function hostRecv(id,m){if(m.t==='act')act(id,m.a);else if(m.t==='me'){m.id=id;net(m);bcast(m,id)}}
+function hostRecv(id,m){if(m.t==='act')act(id,m.a);else if(m.t==='chat'&&typeof m.m==='string'){const q=m.m.trim().slice(0,120);if(q){bcast({t:'chat',id,m:q});chatAdd(id,q)}}else if(m.t==='me'){m.id=id;net(m);bcast(m,id)}}
 function showScr(n){for(const e of document.querySelectorAll('#scr>div[id^="s-"]'))e.hidden=e.id!=='s-'+n;if(n==='pause')$('proom').textContent=online?'Oda kodu: '+roomCode:'';$('start').style.display='flex'}
 function enterGame(){inGame=true;$('start').style.display='none';ren.domElement.requestPointerLock()}
 function createRoom(){showScr('create');$('cstat').textContent='Oda kuruluyor...';$('ccode').textContent='';$('bStartC').hidden=true;
@@ -269,6 +290,7 @@ function net(m){switch(m.t){
  case'me':{let r=rp[m.id];if(!r){const g=new T.Group();pt(g,cy(.25,1.1),[0xe74c3c,0x3498db,0x2ecc71,0xf1c40f,0x9b59b6][m.id%5],0,.75,0);pt(g,sph(.2),0xf5d0a9,0,1.5,0);sign('Oyuncu '+m.id,0,2.15,0,2,g);g.position.set(m.x,m.y,m.z);scene.add(g);r=rp[m.id]={g};toast('Oyuncu '+m.id+' oyunda',1)}Object.assign(r,{x:m.x,y:m.y,z:m.z,yaw:m.yaw,pitch:m.pitch});break}
  case'leave':rmAvatar(m.id);if(auth)for(const b of bodies)if(b.hb===m.id)b.hb=-1;break;
  case'act':if(auth)act(m.pid,m.a);break;
+ case'chat':chatAdd(m.id,m.m);break;
  case'snap':if(!auth)applySnap(m);break}}
 function applySnap(m){const seen=new Set();held=null;
  for(const q of m.b){const[id,k,x,y,z,ry,bu,ck,ins,hb,pr,col]=q;seen.add(id);let b=byId.get(id);if(!b||b.dead){b=spawn(k,x,y,z,id)}
@@ -345,7 +367,7 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min((now-last)/1000
  if(bodies.some(b=>b.dead))bodies=bodies.filter(b=>!b.dead);
  playerU(dt);if(auth){physics(dt);procs(dt)}else guestU(dt);avatarsU(dt);electro(dt);fire(dt);partsU(dt);netU(dt);
  fl=Math.max(0,fl-dt*1.2);$('flash').style.opacity=fl;
- let tip='';if(held)tip='Tutuyorsun: '+held.d.n+' — sol tık fırlat · E bırak';else{const t=pick();if(t){tip=(t.name||t.d.n)+(t.cooked?' (pişmiş)':'')+(t.burn>0?' 🔥':'');if(t.d.box)tip+=' ['+t.contents.length+' parça içinde] — F çalıştır · T boşalt';if(t.contents.length)tip+='\n'+t.contents.map(c=>c.d.n).join(', ');tip+='\nE tut · F kullan · G yak · X sil'}}
+ let tip='';if(held)tip='Tutuyorsun: '+held.d.n+' — sol tık fırlat · E bırak';else{const t=pick();if(t){tip=(t.name||t.d.n)+(t.cooked?' (pişmiş)':'')+(t.burn>0?' 🔥':'');if(t.d.box)tip+=' ['+t.contents.length+' parça içinde] — F çalıştır · R boşalt';if(t.contents.length)tip+='\n'+t.contents.map(c=>c.d.n).join(', ');tip+='\nE tut · F kullan · G yak · X sil'}}
  $('tip').innerText=tip;ren.render(scene,cam)}
 requestAnimationFrame(loop);
 </script></body></html>

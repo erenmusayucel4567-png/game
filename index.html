@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Serbest Sandbox</title>
+<!DOCTYPE html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"><title>Serbest Sandbox</title>
 <style>
 html,body{margin:0;height:100%;overflow:hidden;background:#000;font-family:Segoe UI,Arial,sans-serif;color:#fff}
 canvas{display:block}
@@ -20,7 +20,37 @@ button:hover{background:#4a5d86}
 #clog b{color:#9ec1ff}#clog .sys{color:#bbb;font-style:italic}
 #cin{display:none;width:100%;box-sizing:border-box;margin-top:5px;padding:8px 10px;font-size:15px;border:0;border-radius:8px;background:#1d2330;color:#fff;outline:2px solid #4a5d86;pointer-events:auto}
 #chat.open #cin{display:block}
+
+body{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+#tc{display:none}
+body.touch #tc{display:block}
+body.touch #help{display:none}
+body.touch #chat{top:84px;bottom:auto;width:min(380px,55vw)}
+body.touch #clog{justify-content:flex-start}
+body.touch #tip{top:60%;font-size:13px}
+body.touch #msg{bottom:auto;top:14px;font-size:17px}
+body.touch .box{max-height:92vh;max-width:94vw}
+.tb{position:fixed;width:58px;height:58px;margin:0;padding:0;border-radius:14px;background:#1d2330cc;border:1px solid #fff4;font-size:11px;line-height:1.15;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;touch-action:none;z-index:6}
+.tb i{font-style:normal;font-size:22px;line-height:1}
+.tb.on,.tb:active{background:#4a5d86}
+#joy{position:fixed;left:max(18px,env(safe-area-inset-left));bottom:max(18px,env(safe-area-inset-bottom));width:130px;height:130px;border-radius:50%;background:#ffffff22;border:2px solid #fff5;touch-action:none;z-index:6}
+#joyk{position:absolute;left:35px;top:35px;width:60px;height:60px;border-radius:50%;background:#ffffff77;pointer-events:none}
 </style></head><body>
+<div id="tc">
+<div id="joy"><div id="joyk"></div></div>
+<button class="tb" id="tPause" style="right:10px;top:40px;width:46px;height:40px"><i>⏸</i></button>
+<button class="tb" id="tB" style="right:62px;top:40px;width:46px;height:40px"><i>🎒</i></button>
+<button class="tb" id="tU" style="right:114px;top:40px;width:46px;height:40px"><i>📍</i></button>
+<button class="tb" id="tT" style="right:166px;top:40px;width:46px;height:40px"><i>💬</i></button>
+<button class="tb" id="tG" style="right:140px;bottom:210px;"><i>🔥</i>Yak</button>
+<button class="tb" id="tX" style="right:75px;bottom:210px;"><i>🗑</i>Sil</button>
+<button class="tb" id="tR" style="right:10px;bottom:210px;"><i>🫗</i>Boşalt</button>
+<button class="tb" id="tF" style="right:140px;bottom:145px;"><i>▶</i>Kullan</button>
+<button class="tb" id="tTh" style="right:75px;bottom:145px;"><i>🚀</i>Fırlat</button>
+<button class="tb" id="tE" style="right:10px;bottom:145px;"><i>✋</i>Tut/Bırak</button>
+<button class="tb" id="tRun" style="right:140px;bottom:80px;"><i>🏃</i>Koş</button>
+<button class="tb" id="tJ" style="right:10px;bottom:80px;width:123px"><i>⬆</i>Zıpla</button>
+</div>
 <div id="cross"></div><div id="flash"></div>
 <div id="help"><b>WASD</b> yürü · <b>Shift</b> koş · <b>Space</b> zıpla · <b>B</b> eşya menüsü · <b>U</b> ışınlan<br><b>E</b> tut/bırak · <b>Sol tık</b> fırlat/it · <b>F</b> kullan/çalıştır · <b>G</b> ateşe ver · <b>R</b> kabı boşalt · <b>T</b> sohbet · <b>X</b> sil<br>Eşyayı düdüklü/blender/mikrodalganın üstünde bırakırsan içine girer, sonra F.</div>
 <div id="tip"></div><div id="msg"></div>
@@ -43,6 +73,7 @@ button:hover{background:#4a5d86}
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 const T=THREE,R=Math.random,V=()=>new T.Vector3(),$=i=>document.getElementById(i);
+const TOUCH=('ontouchstart' in window)||navigator.maxTouchPoints>0;const joy={x:0,y:0};if(TOUCH)document.body.classList.add('touch');
 const K={};let locked=false,held=null,time=0,fl=0,bodies=[];
 let auth=true,myId=0,online=false,inGame=false,evq=[],nid=1,peer=null,hostConn=null,roomCode='',pid=2;const conns=new Map();const byId=new Map(),rp={};
 function ev(o){if(online&&auth)evq.push(o)}
@@ -195,8 +226,8 @@ function physics(dt){
 /* ---------- oyuncu ---------- */
 const P={p:V().set(0,0,5.5),vy:0,yaw:0,pitch:0,kv:V()};
 function playerU(dt){
- const f=(K.KeyW?1:0)-(K.KeyS?1:0),s=(K.KeyD?1:0)-(K.KeyA?1:0),sp=K.ShiftLeft?9:5,sn=Math.sin(P.yaw),cs=Math.cos(P.yaw);
- let vx=-sn*f+cs*s,vz=-cs*f-sn*s;const l=Math.hypot(vx,vz);if(l){vx=vx/l*sp;vz=vz/l*sp}
+ const f=clamp((K.KeyW?1:0)-(K.KeyS?1:0)-joy.y,-1,1),s=clamp((K.KeyD?1:0)-(K.KeyA?1:0)+joy.x,-1,1),sp=K.ShiftLeft?9:5,sn=Math.sin(P.yaw),cs=Math.cos(P.yaw);
+ let vx=-sn*f+cs*s,vz=-cs*f-sn*s;const l=Math.hypot(vx,vz);if(l){const mm=Math.min(1,l);vx=vx/l*sp*mm;vz=vz/l*sp*mm}
  P.p.x+=(vx+P.kv.x)*dt;P.p.z+=(vz+P.kv.z)*dt;P.kv.multiplyScalar(Math.exp(-4*dt));
  let gy=0;
  for(const w of walls){const inx=P.p.x>w.a.x-.1&&P.p.x<w.b.x+.1&&P.p.z>w.a.z-.1&&P.p.z<w.b.z+.1;
@@ -213,21 +244,52 @@ function pick(){const o=cam.position;cam.getWorldDirection(dir);let best=null,bd
  for(const b of bodies){if(b.inside||b.dead||b.hb>=0)continue;const rr=Math.max(b.r,.14),tx=b.p.x-o.x,ty=b.p.y-o.y,tz=b.p.z-o.z,t=tx*dir.x+ty*dir.y+tz*dir.z;if(t<0||t>bd)continue;if(tx*tx+ty*ty+tz*tz-t*t<rr*rr){bd=t;best=b}}return best}
 
 /* ---------- girdiler ---------- */
+function reqLock(){if(TOUCH){locked=true;$('start').style.display='none'}else ren.domElement.requestPointerLock()}
+function relLock(){if(TOUCH)locked=false;else document.exitPointerLock()}
 function menuOpen(){return chatOn||!!document.querySelector('.menu.on')}
-function menu(id){const e=$(id),on=!e.classList.contains('on');['bm','um'].forEach(i=>$(i).classList.remove('on'));if(on){e.classList.add('on');document.exitPointerLock()}else ren.domElement.requestPointerLock()}
+function menu(id){const e=$(id),on=!e.classList.contains('on');['bm','um'].forEach(i=>$(i).classList.remove('on'));if(on){e.classList.add('on');relLock()}else reqLock()}
 document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===ren.domElement;if(locked)$('start').style.display='none';else if(inGame&&!menuOpen())showScr('pause')});
 addEventListener('mousemove',e=>{if(!locked)return;P.yaw-=e.movementX*.0022;P.pitch=clamp(P.pitch-e.movementY*.0022,-1.5,1.5)});
-addEventListener('mousedown',e=>{if(!locked||e.button)return;cam.getWorldDirection(dir);if(held)send({t:'drop',th:1,dx:dir.x,dy:dir.y,dz:dir.z});else{const t=pick();if(t)send({t:'push',id:t.id,dx:dir.x,dy:dir.y,dz:dir.z})}});
+addEventListener('mousedown',e=>{if(TOUCH||!locked||e.button)return;cam.getWorldDirection(dir);if(held)send({t:'drop',th:1,dx:dir.x,dy:dir.y,dz:dir.z});else{const t=pick();if(t)send({t:'push',id:t.id,dx:dir.x,dy:dir.y,dz:dir.z})}});
 addEventListener('keyup',e=>K[e.code]=0);
-addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;K[e.code]=1;if(e.code==='Space')e.preventDefault();
- if(e.code==='KeyB')menu('bm');if(e.code==='KeyU')menu('um');if(!locked)return;
- if(e.code==='KeyT'){e.preventDefault();openChat();return}
- if(e.code==='KeyE'){if(held)send({t:'drop',th:0});else{const t=pick();if(t)send({t:'grab',id:t.id})}return}
+addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;K[e.code]=1;if(e.code==='Space')e.preventDefault();gameKey(e.code,e)});
+function gameKey(c,e){
+ if(c==='KeyB')menu('bm');if(c==='KeyU')menu('um');if(!locked)return;
+ if(c==='KeyT'){if(e)e.preventDefault();openChat();return}
+ if(c==='KeyE'){if(held)send({t:'drop',th:0});else{const t=pick();if(t)send({t:'grab',id:t.id})}return}
+ if(c==='Throw'){cam.getWorldDirection(dir);if(held)send({t:'drop',th:1,dx:dir.x,dy:dir.y,dz:dir.z});else{const t=pick();if(t)send({t:'push',id:t.id,dx:dir.x,dy:dir.y,dz:dir.z})}return}
  const t=held||pick();if(!t)return;
- if(e.code==='KeyF')send({t:'use',id:t.id});
- if(e.code==='KeyG')send({t:'ign',id:t.id});
- if(e.code==='KeyX')send({t:'rm',id:t.id});
- if(e.code==='KeyR')send({t:'dump',id:t.id})});
+ if(c==='KeyF')send({t:'use',id:t.id});
+ if(c==='KeyG')send({t:'ign',id:t.id});
+ if(c==='KeyX')send({t:'rm',id:t.id});
+ if(c==='KeyR')send({t:'dump',id:t.id})}
+/* ---------- dokunmatik kontroller ---------- */
+if(TOUCH){
+ const tap=(id,fn)=>{const el=$(id);el.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();fn(true)},{passive:false});el.addEventListener('touchend',e=>{e.preventDefault();fn(false)},{passive:false});el.addEventListener('touchcancel',e=>fn(false))};
+ const press=(id,code)=>tap(id,d=>{if(d)gameKey(code)});
+ press('tE','KeyE');press('tF','KeyF');press('tG','KeyG');press('tX','KeyX');press('tR','KeyR');press('tTh','Throw');
+ tap('tT',d=>{if(d)gameKey('KeyT')});
+ tap('tB',d=>{if(d)gameKey('KeyB')});
+ tap('tU',d=>{if(d)gameKey('KeyU')});
+ tap('tPause',d=>{if(d&&inGame){locked=false;showScr('pause')}});
+ tap('tJ',d=>{K.Space=d?1:0});
+ let run=false;tap('tRun',d=>{if(d){run=!run;K.ShiftLeft=run?1:0;$('tRun').classList.toggle('on',run)}});
+ // joystick
+ const jz=$('joy'),jk=$('joyk');let jid=null,jc=null;
+ const jset=t=>{const R0=45;let dx=t.clientX-jc.x,dy=t.clientY-jc.y;const d=Math.hypot(dx,dy);if(d>R0){dx=dx/d*R0;dy=dy/d*R0}jk.style.transform='translate('+dx+'px,'+dy+'px)';joy.x=dx/R0;joy.y=dy/R0};
+ const jend=()=>{jid=null;joy.x=joy.y=0;jk.style.transform=''};
+ jz.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();if(jid!==null)return;const t=e.changedTouches[0];jid=t.identifier;const r=jz.getBoundingClientRect();jc={x:r.left+r.width/2,y:r.top+r.height/2};jset(t)},{passive:false});
+ jz.addEventListener('touchmove',e=>{e.preventDefault();for(const t of e.changedTouches)if(t.identifier===jid)jset(t)},{passive:false});
+ jz.addEventListener('touchend',e=>{for(const t of e.changedTouches)if(t.identifier===jid)jend()});
+ jz.addEventListener('touchcancel',jend);
+ // bakış: ekrana sürükle
+ const cv=ren.domElement;let lid=null,lx=0,ly=0;
+ cv.addEventListener('touchstart',e=>{e.preventDefault();if(lid!==null)return;const t=e.changedTouches[0];lid=t.identifier;lx=t.clientX;ly=t.clientY},{passive:false});
+ cv.addEventListener('touchmove',e=>{e.preventDefault();for(const t of e.changedTouches)if(t.identifier===lid){if(locked){P.yaw-=(t.clientX-lx)*.005;P.pitch=clamp(P.pitch-(t.clientY-ly)*.005,-1.5,1.5)}lx=t.clientX;ly=t.clientY}},{passive:false});
+ const lend=e=>{for(const t of e.changedTouches)if(t.identifier===lid)lid=null};
+ cv.addEventListener('touchend',lend);cv.addEventListener('touchcancel',lend);
+ document.addEventListener('contextmenu',e=>e.preventDefault());
+}
 /* ---------- sohbet ---------- */
 let chatOn=false;
 function chatPing(){const l=$('clog');l.classList.add('on');clearTimeout(chatPing.h);if(!chatOn)chatPing.h=setTimeout(()=>l.classList.remove('on'),8000)}
@@ -237,8 +299,8 @@ function chatAdd(id,txt,sys){const l=$('clog'),d=document.createElement('div');
 function chatSend(txt){txt=txt.trim().slice(0,120);if(!txt)return;
  if(online&&!auth){if(hostConn&&hostConn.open)hostConn.send({t:'chat',m:txt})}
  else{if(online)bcast({t:'chat',id:myId,m:txt});chatAdd(myId,txt)}}
-function openChat(){if(chatOn)return;chatOn=true;for(const k in K)K[k]=0;$('chat').classList.add('open');chatPing();document.exitPointerLock();const i=$('cin');i.value='';i.focus()}
-function closeChat(){if(!chatOn)return;chatOn=false;$('chat').classList.remove('open');$('cin').blur();chatPing();ren.domElement.requestPointerLock()}
+function openChat(){if(chatOn)return;chatOn=true;for(const k in K)K[k]=0;$('chat').classList.add('open');chatPing();relLock();const i=$('cin');i.value='';i.focus()}
+function closeChat(){if(!chatOn)return;chatOn=false;$('chat').classList.remove('open');$('cin').blur();chatPing();reqLock()}
 $('cin').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){chatSend($('cin').value);closeChat()}else if(e.key==='Escape'){closeChat()}});
 function spawnMenu(k){const d=D[k];cam.getWorldDirection(dir);const x=cam.position.x+dir.x*2.2,z=cam.position.z+dir.z*2.2,y=d.animal?d.r:Math.max(d.r,cam.position.y+dir.y*2.2);send({t:'spawn',k,x,y,z})}
 (()=>{const cats=[...new Set(Object.values(D).map(d=>d.c).filter(c=>c!=='x'))];let h='';for(const c of cats){h+='<h3>'+c+'</h3>';for(const k in D)if(D[k].c===c)h+='<button onclick="spawnMenu(\''+k+'\')">'+D[k].n+'</button>'}$('bl').innerHTML=h})();
@@ -263,7 +325,7 @@ function errTxt(e){return e.type==='browser-incompatible'?'Bu sayfada/tarayıcı
 function bcast(m,ex){for(const[id,c]of conns)if(id!==ex&&c.open)c.send(m)}
 function hostRecv(id,m){if(m.t==='act')act(id,m.a);else if(m.t==='chat'&&typeof m.m==='string'){const q=m.m.trim().slice(0,120);if(q){bcast({t:'chat',id,m:q});chatAdd(id,q)}}else if(m.t==='me'){m.id=id;net(m);bcast(m,id)}}
 function showScr(n){for(const e of document.querySelectorAll('#scr>div[id^="s-"]'))e.hidden=e.id!=='s-'+n;if(n==='pause')$('proom').textContent=online?'Oda kodu: '+roomCode:'';$('start').style.display='flex'}
-function enterGame(){inGame=true;$('start').style.display='none';ren.domElement.requestPointerLock()}
+function enterGame(){inGame=true;$('start').style.display='none';if(TOUCH){try{const de=document.documentElement;(de.requestFullscreen||de.webkitRequestFullscreen||function(){}).call(de)}catch(e){}}reqLock()}
 function createRoom(){showScr('create');$('cstat').textContent='Oda kuruluyor...';$('ccode').textContent='';$('bStartC').hidden=true;
  if(typeof Peer==='undefined'){$('cstat').textContent='PeerJS yüklenemedi (internet var mı?)';return}
  const code=Array.from({length:5},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join('');
@@ -314,7 +376,7 @@ function netU(dt){if(!online)return;nt1+=dt;nt2+=dt;
 $('bSingle').onclick=()=>{online=false;auth=true;enterGame()};
 $('bCreate').onclick=createRoom;$('bFind').onclick=()=>{showScr('find');$('fstat').textContent=''};
 $('bJoin').onclick=()=>joinRoom($('fcode').value);$('fcode').onkeydown=e=>{if(e.key==='Enter')joinRoom($('fcode').value);e.stopPropagation()};
-$('bStartC').onclick=enterGame;$('bStartR').onclick=enterGame;$('bResume').onclick=()=>ren.domElement.requestPointerLock();$('bQuit').onclick=()=>location.reload();
+$('bStartC').onclick=enterGame;$('bStartR').onclick=enterGame;$('bResume').onclick=()=>reqLock();$('bQuit').onclick=()=>location.reload();
 $('bBackC').onclick=$('bBackF').onclick=()=>{try{peer&&peer.destroy()}catch{}peer=null;online=false;conns.clear();showScr('main')};
 
 let seed=12345;const SR=()=>(seed=seed*16807%2147483647)/2147483647;
@@ -367,7 +429,7 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min((now-last)/1000
  if(bodies.some(b=>b.dead))bodies=bodies.filter(b=>!b.dead);
  playerU(dt);if(auth){physics(dt);procs(dt)}else guestU(dt);avatarsU(dt);electro(dt);fire(dt);partsU(dt);netU(dt);
  fl=Math.max(0,fl-dt*1.2);$('flash').style.opacity=fl;
- let tip='';if(held)tip='Tutuyorsun: '+held.d.n+' — sol tık fırlat · E bırak';else{const t=pick();if(t){tip=(t.name||t.d.n)+(t.cooked?' (pişmiş)':'')+(t.burn>0?' 🔥':'');if(t.d.box)tip+=' ['+t.contents.length+' parça içinde] — F çalıştır · R boşalt';if(t.contents.length)tip+='\n'+t.contents.map(c=>c.d.n).join(', ');tip+='\nE tut · F kullan · G yak · X sil'}}
+ let tip='';if(held)tip='Tutuyorsun: '+held.d.n+(TOUCH?' — Fırlat / Bırak butonları':' — sol tık fırlat · E bırak');else{const t=pick();if(t){tip=(t.name||t.d.n)+(t.cooked?' (pişmiş)':'')+(t.burn>0?' 🔥':'');if(t.d.box)tip+=' ['+t.contents.length+' parça içinde]'+(TOUCH?' — Kullan · Boşalt':' — F çalıştır · R boşalt');if(t.contents.length)tip+='\n'+t.contents.map(c=>c.d.n).join(', ');if(!TOUCH)tip+='\nE tut · F kullan · G yak · X sil'}}
  $('tip').innerText=tip;ren.render(scene,cam)}
 requestAnimationFrame(loop);
 </script></body></html>
